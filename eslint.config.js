@@ -1,34 +1,26 @@
-import eslint from '@eslint/js'
-import reactHooks from 'eslint-plugin-react-hooks'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
+//  @ts-check
 
-export default tseslint.config(
+import { tanstackConfig } from '@tanstack/eslint-config'
+
+export default [
+  ...tanstackConfig,
+  {
+    rules: {
+      'import/no-cycle': 'off',
+      'import/order': 'off',
+      'sort-imports': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/require-await': 'off',
+      'pnpm/json-enforce-catalog': 'off',
+    },
+  },
   {
     ignores: [
-      '.output/**',
-      '.tanstack/**',
-      'dist/**',
-      'node_modules/**',
-      'src/routeTree.gen.ts',
+      'eslint.config.js',
+      'prettier.config.js',
+      'convex/_generated/**',
+      '.agents/skills/**',
+      '.claude/skills/**',
     ],
   },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommended,
-  {
-    files: ['**/*.{ts,tsx}'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
-    },
-    plugins: {
-      'react-hooks': reactHooks,
-    },
-    rules: {
-      ...reactHooks.configs.flat.recommended.rules,
-    },
-  },
-)
+]

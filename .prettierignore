@@ -1,0 +1,7 @@
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+convex/_generated/
+.agents/skills/
+.claude/skills/
+.convex/

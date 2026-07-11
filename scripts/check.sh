@@ -2,21 +2,21 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-echo "==> Generating TanStack routes"
-bun run generate-routes
-
-echo "==> Typechecking"
+echo "Checking types..."
 bun run typecheck
 
-echo "==> Linting"
+echo "Checking lint..."
 bun run lint
 
-echo "==> Running tests"
-bun run test --passWithNoTests
+echo "Checking formatting..."
+bun run check
 
-echo "==> Building production bundle"
+echo "Running tests..."
+bun run test
+
+echo "Building production bundle..."
 bun run build
 
-echo "==> All checks passed"
+echo "All checks passed."

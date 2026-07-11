@@ -1,24 +1,26 @@
 {
-  "name": "audio-anything",
+  "name": "kcal-count",
   "private": true,
   "type": "module",
   "imports": {
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "concurrently --kill-others --names web,convex --prefix-colors cyan,magenta \"bun run dev:web\" \"bun run dev:convex\"",
+    "dev": "concurrently --kill-others --names web,convex 'bun run dev:web' 'bun run dev:convex'",
     "dev:web": "vite dev --port 3000",
     "dev:convex": "convex dev",
     "generate-routes": "tsr generate",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint",
+    "format": "prettier --write . && eslint --fix",
+    "check": "prettier --check ."
   },
   "dependencies": {
-    "@base-ui/react": "^1.6.0",
     "@clerk/tanstack-react-start": "^1.4.17",
+    "@clerk/ui": "^1.25.2",
     "@convex-dev/react-query": "^0.1.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/inter": "^5.2.8",
@@ -34,7 +36,7 @@
     "clsx": "^2.1.1",
     "convex": "^1.42.1",
     "lucide-react": "^0.545.0",
-    "nitro": "npm:nitro-nightly@latest",
+    "radix-ui": "^1.6.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "shadcn": "^4.13.0",
@@ -43,9 +45,9 @@
     "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
+    "@tanstack/eslint-config": "latest",
     "@tanstack/router-cli": "^1.132.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
@@ -54,12 +56,10 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^10.0.3",
-    "eslint": "^10.7.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.7.0",
+    "eslint": "^9.20.0",
     "jsdom": "^28.1.0",
+    "prettier": "^3.8.1",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.63.0",
     "vite": "^8.0.0",
     "vitest": "^4.1.5"
   },
