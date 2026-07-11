@@ -1,50 +1,53 @@
-# audio-anything
+# Kcal Count
 
-TanStack Start application using Convex, Clerk, shadcn/ui, Tailwind CSS, and Bun.
+TanStack Start app with Convex for the backend and Clerk for authentication.
+The project uses Bun for dependency management and scripts.
 
-## Configure services
+## Setup
 
-Install dependencies and create your local environment file:
+1. Install dependencies:
 
-```bash
-bun install
-cp .env.example .env.local
-```
+   ```bash
+   bun install
+   ```
 
-Initialize or connect a Convex development deployment:
+2. Create a Convex project and development deployment:
 
-```bash
-bunx convex dev
-```
+   ```bash
+   bunx convex dev
+   ```
 
-Add the generated `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` values to
-`.env.local`. In Clerk, create an application and add its publishable and secret
-keys to the same file.
+   Keep this process running. It writes `CONVEX_DEPLOYMENT` and
+   `VITE_CONVEX_URL` to `.env.local`.
 
-Create a Clerk JWT template named `convex`, then set
-`CLERK_JWT_ISSUER_DOMAIN` in the Convex dashboard to your Clerk Frontend API
-URL. The value is used by `convex/auth.config.ts` when Convex deploys.
+3. Create a Clerk application, then activate its Convex integration. Copy
+   `.env.example` to `.env.local` and fill in the Clerk publishable key, secret
+   key, and Frontend API URL.
 
-## Develop
+4. In the Convex dashboard, add `CLERK_JWT_ISSUER_DOMAIN` with the same Clerk
+   Frontend API URL. Restart `bunx convex dev` to sync `convex/auth.config.ts`.
 
-Run Convex and the web app together:
+5. Start the web app and Convex development sync together:
 
-```bash
-bun run dev
-```
+   ```bash
+   bun run dev
+   ```
 
-For debugging, they can still be started separately with `bun run dev:web`
-and `bun run dev:convex`.
+Open <http://localhost:3000>.
 
-The app is available at <http://localhost:3000>.
-
-## Useful commands
+## Commands
 
 ```bash
-bun run build
-bun run test
-bunx shadcn@latest add card
+bun run dev          # TanStack Start and Convex development servers
+bun run dev:web      # TanStack Start development server only
+bun run dev:convex   # Convex development sync only
+bun run build        # Production build
+bun run lint         # ESLint
+bun run test         # Vitest
 ```
 
-Routes live in `src/routes`, Convex functions live in `convex`, and shadcn/ui
-components live in `src/components/ui`.
+## Documentation
+
+- [TanStack Start](https://tanstack.com/start/latest/docs/framework/react/overview)
+- [Convex with TanStack Start and Clerk](https://docs.convex.dev/client/tanstack/tanstack-start/clerk)
+- [Clerk TanStack Start quickstart](https://clerk.com/docs/tanstack-react-start/getting-started/quickstart)

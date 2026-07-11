@@ -1,31 +1,42 @@
 import {
   HeadContent,
+  Outlet,
   Scripts,
   createRootRouteWithContext,
   useRouteContext,
+  useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start'
-import { auth } from '@clerk/tanstack-react-start/server'
-import type { ConvexQueryClient } from '@convex-dev/react-query'
 import type { QueryClient } from '@tanstack/react-query'
+import { createServerFn } from '@tanstack/react-start'
+import {
+  ClerkProvider,
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useAuth,
+} from '@clerk/tanstack-react-start'
+import { auth } from '@clerk/tanstack-react-start/server'
+import { shadcn } from '@clerk/ui/themes'
+import type { ConvexQueryClient } from '@convex-dev/react-query'
 import type { ConvexReactClient } from 'convex/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
+import { Button } from '@/components/ui/button'
 
 import appCss from '../styles.css?url'
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(async () => {
+  const { userId, getToken } = await auth()
+  return { userId, token: await getToken() }
+})
 
-type RouterContext = {
+export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
   convexClient: ConvexReactClient
   convexQueryClient: ConvexQueryClient
-}
-
-export const Route = createRootRouteWithContext<RouterContext>()({
+}>()({
   head: () => ({
     meta: [
       {
@@ -36,7 +47,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Kcal Count',
       },
     ],
     links: [
@@ -47,35 +58,61 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
   }),
   beforeLoad: async ({ context }) => {
-    const { userId, getToken } = await auth()
-    const token = await getToken({ template: 'convex' })
-
-    if (token) {
-      context.convexQueryClient.serverHttpClient?.setAuth(token)
+    const clerkAuth = await fetchClerkAuth()
+    if (clerkAuth.token) {
+      context.convexQueryClient.serverHttpClient?.setAuth(clerkAuth.token)
     }
-
-    return { userId }
+    return clerkAuth
   },
-  shellComponent: RootDocument,
+  component: RootComponent,
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootComponent() {
   const { convexClient } = useRouteContext({ from: Route.id })
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <ClerkProvider appearance={{ theme: shadcn }}>
+      <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+        <RootDocument>
+          <Outlet />
+        </RootDocument>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
+  )
+}
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  const isAuthRoute = useRouterState({
+    select: ({ location }) =>
+      location.pathname.startsWith('/sign-in') ||
+      location.pathname.startsWith('/sign-up'),
+  })
+
+  return (
+    <html lang="en">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <ClerkProvider>
-          <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-            <Header />
-            {children}
-            <Footer />
-          </ConvexProviderWithClerk>
-        </ClerkProvider>
+      <body>
+        {!isAuthRoute && (
+          <header className="flex items-center justify-between border-b border-border px-8 py-4">
+            <span className="font-semibold">Kcal Count</span>
+            <Show when="signed-out">
+              <div className="flex items-center gap-2">
+                <SignInButton mode="redirect">
+                  <Button variant="ghost">Sign in</Button>
+                </SignInButton>
+                <SignUpButton mode="redirect">
+                  <Button>Sign up</Button>
+                </SignUpButton>
+              </div>
+            </Show>
+            <Show when="signed-in">
+              <UserButton />
+            </Show>
+          </header>
+        )}
+        {children}
         <TanStackDevtools
           config={{
             position: 'bottom-right',

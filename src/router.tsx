@@ -1,14 +1,20 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { QueryClient } from '@tanstack/react-query'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
-import { QueryClient } from '@tanstack/react-query'
 import { ConvexReactClient } from 'convex/react'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
-  const convexClient = new ConvexReactClient(
-    import.meta.env.VITE_CONVEX_URL ?? 'https://placeholder.convex.cloud',
-  )
+  const convexUrl = import.meta.env.VITE_CONVEX_URL
+
+  if (!convexUrl) {
+    throw new Error('Missing VITE_CONVEX_URL in your environment')
+  }
+
+  const convexClient = new ConvexReactClient(convexUrl, {
+    unsavedChangesWarning: false,
+  })
   const convexQueryClient = new ConvexQueryClient(convexClient)
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -18,6 +24,7 @@ export function getRouter() {
       },
     },
   })
+
   convexQueryClient.connect(queryClient)
 
   const router = createTanStackRouter({
