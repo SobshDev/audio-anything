@@ -36,6 +36,9 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const initialMode = getInitialMode()
+    // Read browser-only storage after hydration to keep the server and client
+    // render identical. This one-time synchronization intentionally updates state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMode(initialMode)
     applyThemeMode(initialMode)
   }, [])
