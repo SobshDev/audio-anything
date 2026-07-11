@@ -27,12 +27,14 @@ URL. The value is used by `convex/auth.config.ts` when Convex deploys.
 
 ## Develop
 
-Run Convex and the web app in separate terminals:
+Run Convex and the web app together:
 
 ```bash
-bun run dev:convex
 bun run dev
 ```
+
+For debugging, they can still be started separately with `bun run dev:web`
+and `bun run dev:convex`.
 
 The app is available at <http://localhost:3000>.
 
