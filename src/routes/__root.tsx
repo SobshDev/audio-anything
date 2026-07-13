@@ -11,6 +11,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 
+import { AppNavbar } from "@/components/app-navbar"
 import { Toaster } from "@/components/ui/sonner"
 import appCss from "../styles.css?url"
 
@@ -58,6 +59,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="min-h-svh bg-background text-foreground antialiased">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+            <AppNavbar />
             {children}
             <Toaster />
             <TanStackDevtools

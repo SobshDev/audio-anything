@@ -1,9 +1,4 @@
-import {
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/tanstack-react-start"
+import { Show, SignInButton, SignUpButton } from "@clerk/tanstack-react-start"
 import { createFileRoute } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 
@@ -11,7 +6,7 @@ export const Route = createFileRoute("/")({ component: App })
 
 function App() {
   return (
-    <main className="flex min-h-svh items-center justify-center p-6">
+    <main className="flex min-h-[calc(100svh-5rem)] items-center justify-center p-6">
       <div className="flex max-w-xl flex-col items-start gap-6">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
@@ -38,12 +33,9 @@ function App() {
         </Show>
 
         <Show when="signed-in">
-          <div className="flex items-center gap-3">
-            <UserButton />
-            <span className="text-sm text-muted-foreground">
-              Clerk and Convex providers are connected.
-            </span>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Clerk and Convex providers are connected.
+          </p>
         </Show>
       </div>
     </main>
