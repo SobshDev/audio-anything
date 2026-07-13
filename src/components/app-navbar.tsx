@@ -1,7 +1,7 @@
 import { Show, UserButton } from "@clerk/tanstack-react-start"
 import { useRouterState } from "@tanstack/react-router"
 import { useConvexAuth, useQuery } from "convex/react"
-import { Coins } from "lucide-react"
+import { Gauge } from "lucide-react"
 
 import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
@@ -29,16 +29,18 @@ function UserButtonWithTokens() {
     isAuthenticated ? {} : "skip"
   )
 
+  const label = usage
+    ? `${Math.round((usage.remaining / usage.limit) * 100)}% left · resets ${new Date(
+        usage.resetsAt
+      ).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+    : "Loading tokens…"
+
   return (
     <UserButton>
       <UserButton.MenuItems>
         <UserButton.Action
-          label={
-            usage
-              ? `${Math.round((usage.remaining / usage.limit) * 100)}% left`
-              : "Loading tokens…"
-          }
-          labelIcon={<Coins className="size-4" />}
+          label={label}
+          labelIcon={<Gauge className="size-4" />}
           onClick={() => {}}
         />
       </UserButton.MenuItems>
