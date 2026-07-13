@@ -1,8 +1,8 @@
 import { v } from "convex/values"
 
 import { internalMutation, query } from "../_generated/server"
+import { getPlanLimits } from "../plans"
 
-export const FREE_WEEKLY_CHARACTER_LIMIT = 25_000
 const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1_000
 
 export class TtsQuotaExceededError extends Error {
@@ -27,6 +27,7 @@ export const reserveCharacters = internalMutation({
   },
   handler: async (ctx, args) => {
     validateCharacterCount(args.characters)
+    const limits = await getPlanLimits(ctx, args.accountId)
     const weekStart = startOfUtcWeek(args.now)
     const usage = await ctx.db
       .query("weeklyTtsUsage")
@@ -36,9 +37,9 @@ export const reserveCharacters = internalMutation({
       .unique()
     const used = usage?.usedCharacters ?? 0
 
-    if (used + args.characters > FREE_WEEKLY_CHARACTER_LIMIT) {
+    if (used + args.characters > limits.ttsCharacters) {
       throw new TtsQuotaExceededError(
-        FREE_WEEKLY_CHARACTER_LIMIT,
+        limits.ttsCharacters,
         used,
         args.characters,
         weekStart + MILLISECONDS_PER_WEEK
@@ -58,9 +59,9 @@ export const reserveCharacters = internalMutation({
     }
 
     return {
-      limit: FREE_WEEKLY_CHARACTER_LIMIT,
+      limit: limits.ttsCharacters,
       used: used + args.characters,
-      remaining: FREE_WEEKLY_CHARACTER_LIMIT - used - args.characters,
+      remaining: limits.ttsCharacters - used - args.characters,
       resetsAt: weekStart + MILLISECONDS_PER_WEEK,
     }
   },
@@ -99,6 +100,7 @@ export const getMyWeeklyUsage = query({
     if (!identity) throw new Error("Authentication required")
 
     const now = Date.now()
+    const limits = await getPlanLimits(ctx, identity.tokenIdentifier)
     const weekStart = startOfUtcWeek(now)
     const usage = await ctx.db
       .query("weeklyTtsUsage")
@@ -109,9 +111,9 @@ export const getMyWeeklyUsage = query({
     const used = usage?.usedCharacters ?? 0
 
     return {
-      limit: FREE_WEEKLY_CHARACTER_LIMIT,
+      limit: limits.ttsCharacters,
       used,
-      remaining: FREE_WEEKLY_CHARACTER_LIMIT - used,
+      remaining: Math.max(0, limits.ttsCharacters - used),
       resetsAt: weekStart + MILLISECONDS_PER_WEEK,
     }
   },
