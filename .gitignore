@@ -38,3 +38,6 @@ todos.json
 
 # TypeScript
 *.tsbuildinfo
+
+# clerk configuration (can include secrets)
+/.clerk/
