@@ -1,15 +1,40 @@
-node_modules
-.DS_Store
-dist
-dist-ssr
-*.local
+# Dependencies
+node_modules/
+
+# Local environment and secrets
 .env*
-.tanstack
-.wrangler
-.output
-.vinxi
+!.env.example
+*.local
+
+# Build output and framework caches
+dist/
+dist-ssr/
+coverage/
+.vite/
+.tanstack/
+.wrangler/
+.output/
+.vinxi/
+.vercel/
 __unconfig*
+
+# Convex local deployment state
+.convex/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS and editor files
+.DS_Store
+.idea/
+*.swp
+
+# Local project files
 todos.json
 
-# typescript
+# TypeScript
 *.tsbuildinfo
