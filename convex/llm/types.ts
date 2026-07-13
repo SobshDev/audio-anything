@@ -25,6 +25,7 @@ export type ChatCompletionInput = {
   topP?: number
   seed?: number
   stop?: string | Array<string>
+  reasoningEffort?: "minimal" | "low" | "medium" | "high"
   responseFormat?: JsonResponseFormat
 }
 

@@ -33,13 +33,7 @@ function UserButtonWithTokens() {
     isAuthenticated ? {} : "skip"
   )
 
-  const quotas =
-    llmUsage && ttsUsage
-      ? [
-          llmUsage,
-          ttsUsage,
-        ]
-      : null
+  const quotas = llmUsage && ttsUsage ? [llmUsage, ttsUsage] : null
   const lowestQuota = quotas?.reduce((lowest, quota) =>
     quota.remaining / quota.limit < lowest.remaining / lowest.limit
       ? quota
