@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "concurrently --kill-others-on-fail \"bun run dev:app\" \"bun run dev:convex\"",
     "dev:convex": "convex dev",
     "dev:app": "vite dev --port 3000",
     "build": "vite build",
@@ -47,6 +47,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6",
+    "concurrently": "^10.0.3",
     "eslint": "^9",
     "jsdom": "^28",
     "prettier": "^3.8.3",
