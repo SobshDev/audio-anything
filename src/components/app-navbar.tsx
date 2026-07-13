@@ -1,6 +1,9 @@
 import { Show, UserButton } from "@clerk/tanstack-react-start"
 import { useRouterState } from "@tanstack/react-router"
+import { useConvexAuth, useQuery } from "convex/react"
+import { Coins } from "lucide-react"
 
+import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
@@ -16,6 +19,32 @@ const navigationItems = [
   { label: "Audios", to: "/audios" },
   { label: "Settings", to: "/settings" },
 ] as const
+
+function UserButtonWithTokens() {
+  // Convex auth can lag slightly behind Clerk's signed-in state, so skip the
+  // query until the Convex client is authenticated.
+  const { isAuthenticated } = useConvexAuth()
+  const usage = useQuery(
+    api.tts.usage.getMyWeeklyUsage,
+    isAuthenticated ? {} : "skip"
+  )
+
+  return (
+    <UserButton>
+      <UserButton.MenuItems>
+        <UserButton.Action
+          label={
+            usage
+              ? `${Math.round((usage.remaining / usage.limit) * 100)}% left`
+              : "Loading tokens…"
+          }
+          labelIcon={<Coins className="size-4" />}
+          onClick={() => {}}
+        />
+      </UserButton.MenuItems>
+    </UserButton>
+  )
+}
 
 export function AppNavbar() {
   const pathname = useRouterState({
@@ -55,7 +84,7 @@ export function AppNavbar() {
           </Show>
 
           <Show when="signed-in">
-            <UserButton />
+            <UserButtonWithTokens />
           </Show>
         </div>
       </div>
