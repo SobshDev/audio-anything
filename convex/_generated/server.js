@@ -92,4 +92,7 @@ export const internalAction = internalActionGeneric;
  */
 export const httpAction = httpActionGeneric;
 
+/**
+ * Typesafe environment variables declared in `convex.config.ts`.
+ */
 export const env = process.env;

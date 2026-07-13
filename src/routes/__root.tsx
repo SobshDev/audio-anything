@@ -1,4 +1,8 @@
+import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start"
+import { shadcn } from "@clerk/ui/themes"
 import type { QueryClient } from "@tanstack/react-query"
+import type { ConvexReactClient } from "convex/react"
+import { ConvexProviderWithClerk } from "convex/react-clerk"
 import {
   HeadContent,
   Scripts,
@@ -11,6 +15,7 @@ import appCss from "../styles.css?url"
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
+  convexClient: ConvexReactClient
 }>()({
   head: () => ({
     meta: [
@@ -42,25 +47,31 @@ export const Route = createRootRouteWithContext<{
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { convexClient } = Route.useRouteContext()
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body className="min-h-svh bg-background text-foreground antialiased">
-        {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
-        <Scripts />
+        <ClerkProvider appearance={{ theme: shadcn }}>
+          <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+            {children}
+            <TanStackDevtools
+              config={{
+                position: "bottom-right",
+              }}
+              plugins={[
+                {
+                  name: "Tanstack Router",
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+              ]}
+            />
+            <Scripts />
+          </ConvexProviderWithClerk>
+        </ClerkProvider>
       </body>
     </html>
   )
