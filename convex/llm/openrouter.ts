@@ -88,6 +88,9 @@ export class OpenRouterProvider implements LanguageModelProvider {
         ...(input.topP === undefined ? {} : { top_p: input.topP }),
         ...(input.seed === undefined ? {} : { seed: input.seed }),
         ...(input.stop === undefined ? {} : { stop: input.stop }),
+        ...(input.reasoningEffort === undefined
+          ? {}
+          : { reasoning: { effort: input.reasoningEffort } }),
         ...(input.responseFormat
           ? { response_format: toApiResponseFormat(input.responseFormat) }
           : {}),

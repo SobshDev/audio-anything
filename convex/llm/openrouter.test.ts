@@ -37,6 +37,7 @@ describe("OpenRouterProvider", () => {
       model: "anthropic/claude-sonnet-4",
       messages: [{ role: "user", content: "Summarize this." }],
       maxCompletionTokens: 500,
+      reasoningEffort: "minimal",
     })
 
     expect(result.usage.totalTokens).toBe(150)
@@ -52,6 +53,7 @@ describe("OpenRouterProvider", () => {
       model: "anthropic/claude-sonnet-4",
       stream: false,
       max_completion_tokens: 500,
+      reasoning: { effort: "minimal" },
     })
   })
 

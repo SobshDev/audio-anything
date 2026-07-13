@@ -9,6 +9,10 @@
  */
 
 import type * as accounts from "../accounts.js";
+import type * as documents from "../documents.js";
+import type * as ingestion_classify from "../ingestion/classify.js";
+import type * as ingestion_extract from "../ingestion/extract.js";
+import type * as ingestion_process from "../ingestion/process.js";
 import type * as llm_generate from "../llm/generate.js";
 import type * as llm_openrouter from "../llm/openrouter.js";
 import type * as llm_types from "../llm/types.js";
@@ -27,6 +31,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
+  documents: typeof documents;
+  "ingestion/classify": typeof ingestion_classify;
+  "ingestion/extract": typeof ingestion_extract;
+  "ingestion/process": typeof ingestion_process;
   "llm/generate": typeof llm_generate;
   "llm/openrouter": typeof llm_openrouter;
   "llm/types": typeof llm_types;
