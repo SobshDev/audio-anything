@@ -4,5 +4,6 @@ import { v } from "convex/values"
 export default defineApp({
   env: {
     CLERK_JWT_ISSUER_DOMAIN: v.string(),
+    ELEVENLABS_API_KEY: v.optional(v.string()),
   },
 })

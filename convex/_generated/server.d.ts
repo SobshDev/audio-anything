@@ -26,6 +26,7 @@ import type { DataModel } from "./dataModel.js";
  */
 type Env = {
   readonly CLERK_JWT_ISSUER_DOMAIN: string;
+  readonly ELEVENLABS_API_KEY: string | undefined;
 };
 
 /**
