@@ -1,7 +1,7 @@
-import { Show, UserButton } from "@clerk/tanstack-react-start"
+import { Show, UserButton, useAuth } from "@clerk/tanstack-react-start"
 import { useRouterState } from "@tanstack/react-router"
 import { useConvexAuth, useQuery } from "convex/react"
-import { Gauge } from "lucide-react"
+import { Gauge, ShieldIcon } from "lucide-react"
 
 import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
@@ -24,14 +24,31 @@ function UserButtonWithTokens() {
   // Convex auth can lag slightly behind Clerk's signed-in state, so skip the
   // query until the Convex client is authenticated.
   const { isAuthenticated } = useConvexAuth()
-  const usage = useQuery(
+  const llmUsage = useQuery(
+    api.llm.usage.getMyWeeklyUsage,
+    isAuthenticated ? {} : "skip"
+  )
+  const ttsUsage = useQuery(
     api.tts.usage.getMyWeeklyUsage,
     isAuthenticated ? {} : "skip"
   )
 
-  const label = usage
-    ? `${Math.round((usage.remaining / usage.limit) * 100)}% left · resets ${new Date(
-        usage.resetsAt
+  const quotas =
+    llmUsage && ttsUsage
+      ? [
+          llmUsage,
+          ttsUsage,
+        ]
+      : null
+  const lowestQuota = quotas?.reduce((lowest, quota) =>
+    quota.remaining / quota.limit < lowest.remaining / lowest.limit
+      ? quota
+      : lowest
+  )
+
+  const label = lowestQuota
+    ? `${Math.round((lowestQuota.remaining / lowestQuota.limit) * 100)}% left · resets ${new Date(
+        lowestQuota.resetsAt
       ).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
     : "Loading tokens…"
 
@@ -49,9 +66,11 @@ function UserButtonWithTokens() {
 }
 
 export function AppNavbar() {
+  const { sessionClaims } = useAuth()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
+  const isAdmin = sessionClaims?.metadata?.role === "admin"
 
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
     return null
@@ -75,6 +94,20 @@ export function AppNavbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
             ))}
+            {isAdmin && (
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname === "/admin"}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <a href="/admin">
+                    <ShieldIcon />
+                    Admin
+                  </a>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            )}
           </NavigationMenuList>
         </NavigationMenu>
 

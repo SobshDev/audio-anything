@@ -2,22 +2,23 @@ import { v } from "convex/values"
 
 import type { QueryCtx, MutationCtx } from "../_generated/server"
 import { internalMutation, internalQuery, query } from "../_generated/server"
+import { getPlanLimits } from "../plans"
 import { startOfUtcWeek } from "../tts/usage"
 
-export const FREE_WEEKLY_TOKEN_LIMIT = 1_000_000
 const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1_000
 
 export const reserveTokens = internalMutation({
   args: { accountId: v.string(), tokens: v.number(), now: v.number() },
   handler: async (ctx, args) => {
     validateTokens(args.tokens)
+    const limits = await getPlanLimits(ctx, args.accountId)
     const weekStart = startOfUtcWeek(args.now)
     const usage = await findUsage(ctx, args.accountId, weekStart)
     const used = usage?.usedTokens ?? 0
 
-    if (used + args.tokens > FREE_WEEKLY_TOKEN_LIMIT) {
+    if (used + args.tokens > limits.llmTokens) {
       throw new Error(
-        `Weekly LLM quota exceeded: ${used.toLocaleString()} of ${FREE_WEEKLY_TOKEN_LIMIT.toLocaleString()} tokens used`
+        `Weekly LLM quota exceeded: ${used.toLocaleString()} of ${limits.llmTokens.toLocaleString()} tokens used`
       )
     }
 
@@ -71,13 +72,14 @@ export const getMyWeeklyUsage = query({
     if (!identity) throw new Error("Authentication required")
 
     const now = Date.now()
+    const limits = await getPlanLimits(ctx, identity.tokenIdentifier)
     const weekStart = startOfUtcWeek(now)
     const usage = await findUsage(ctx, identity.tokenIdentifier, weekStart)
     const used = usage?.usedTokens ?? 0
     return {
-      limit: FREE_WEEKLY_TOKEN_LIMIT,
+      limit: limits.llmTokens,
       used,
-      remaining: Math.max(0, FREE_WEEKLY_TOKEN_LIMIT - used),
+      remaining: Math.max(0, limits.llmTokens - used),
       resetsAt: weekStart + MILLISECONDS_PER_WEEK,
     }
   },
@@ -87,12 +89,13 @@ export const getUsageForAccount = internalQuery({
   args: { accountId: v.string(), now: v.number() },
   handler: async (ctx, args) => {
     const weekStart = startOfUtcWeek(args.now)
+    const limits = await getPlanLimits(ctx, args.accountId)
     const usage = await findUsage(ctx, args.accountId, weekStart)
     const used = usage?.usedTokens ?? 0
     return {
-      limit: FREE_WEEKLY_TOKEN_LIMIT,
+      limit: limits.llmTokens,
       used,
-      remaining: Math.max(0, FREE_WEEKLY_TOKEN_LIMIT - used),
+      remaining: Math.max(0, limits.llmTokens - used),
       resetsAt: weekStart + MILLISECONDS_PER_WEEK,
     }
   },
