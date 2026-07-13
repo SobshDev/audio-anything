@@ -4,7 +4,7 @@ import type { QueryCtx, MutationCtx } from "../_generated/server"
 import { internalMutation, internalQuery, query } from "../_generated/server"
 import { startOfUtcWeek } from "../tts/usage"
 
-export const FREE_WEEKLY_TOKEN_LIMIT = 100_000
+export const FREE_WEEKLY_TOKEN_LIMIT = 1_000_000
 const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1_000
 
 export const reserveTokens = internalMutation({
