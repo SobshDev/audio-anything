@@ -1,5 +1,6 @@
 import type {
   AudioFormat,
+  DialogueInput,
   SynthesizeSpeechInput,
   SynthesizedSpeech,
   TextToSpeechProvider,
@@ -147,6 +148,51 @@ export class ElevenLabsProvider implements TextToSpeechProvider {
     }
 
     return results
+  }
+
+  async synthesizeDialogue(input: {
+    inputs: Array<DialogueInput>
+    outputFormat?: AudioFormat
+    seed?: number
+  }): Promise<SynthesizedSpeech> {
+    const inputs = input.inputs
+      .map((turn) => ({ text: turn.text.trim(), voiceId: turn.voiceId.trim() }))
+      .filter((turn) => turn.text)
+    if (inputs.length === 0) throw new Error("Dialogue text is required")
+    if (inputs.some((turn) => !turn.voiceId)) {
+      throw new Error("Every dialogue turn requires a voice ID")
+    }
+    if (new Set(inputs.map((turn) => turn.voiceId)).size > 10) {
+      throw new Error("ElevenLabs accepts at most 10 dialogue voices")
+    }
+    if (inputs.reduce((total, turn) => total + turn.text.length, 0) > 2_000) {
+      throw new Error("Dialogue requests must not exceed 2,000 characters")
+    }
+
+    const outputFormat = input.outputFormat ?? DEFAULT_OUTPUT_FORMAT
+    const url = new URL("/v1/text-to-dialogue", this.baseUrl)
+    url.searchParams.set("output_format", outputFormat)
+    const response = await this.fetch(url, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({
+        inputs: inputs.map((turn) => ({
+          text: turn.text,
+          voice_id: turn.voiceId,
+        })),
+        model_id: "eleven_v3",
+        ...(input.seed === undefined ? {} : { seed: input.seed }),
+      }),
+    })
+    if (!response.ok) throw await toApiError(response)
+    return {
+      audio: await response.blob(),
+      contentType:
+        response.headers.get("content-type") ?? contentType(outputFormat),
+      requestId:
+        response.headers.get("request-id") ??
+        response.headers.get("x-request-id"),
+    }
   }
 
   async listVoices(options?: {

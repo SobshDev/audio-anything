@@ -8,6 +8,8 @@ import {
 import {
   AlertCircleIcon,
   ArrowLeftIcon,
+  AudioLinesIcon,
+  CheckIcon,
   FileTextIcon,
   RefreshCwIcon,
 } from "lucide-react"
@@ -15,6 +17,7 @@ import { toast } from "sonner"
 
 import { api } from "../../convex/_generated/api"
 import type { Id } from "../../convex/_generated/dataModel"
+import { LocalReader } from "@/components/document/local-reader"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +52,7 @@ function DocumentPage() {
     isAuthenticated ? { documentId: id } : "skip"
   )
   const retry = useMutation(api.documents.retry)
+  const validate = useMutation(api.documents.validate)
   const kept = usePaginatedQuery(
     api.documents.listBlocks,
     isAuthenticated ? { documentId: id, action: "kept" } : "skip",
@@ -81,6 +85,8 @@ function DocumentPage() {
 
   const processing =
     document.status === "queued" || document.status === "processing"
+  const generatingAudio =
+    document.audioStatus === "queued" || document.audioStatus === "generating"
 
   return (
     <main className="min-h-[calc(100svh-5rem)] w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -158,63 +164,140 @@ function DocumentPage() {
         ) : null}
 
         {document.status === "ready" ? (
-          <Tabs defaultValue="cleaned">
-            <TabsList>
-              <TabsTrigger value="cleaned">Cleaned text</TabsTrigger>
-              <TabsTrigger value="removed">
-                Removed ({document.removedBlockCount ?? 0})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="cleaned">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Cleaned document</CardTitle>
-                  <CardDescription>
-                    Content ready for the audio pipeline.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4 leading-7">
-                  {kept.results.map((block) => (
-                    <p key={block._id}>{block.text}</p>
-                  ))}
-                  <LoadMore result={kept} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="removed">
-              <div className="flex flex-col gap-3">
-                {removed.results.length ? (
-                  removed.results.map((block) => (
-                    <Card key={block._id} size="sm">
-                      <CardHeader>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">
-                            Page {block.pageStart}
-                          </Badge>
-                          <Badge variant="secondary">
-                            {formatReason(block.reason)}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="text-sm leading-6 text-muted-foreground">
-                        {block.text}
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <Empty className="border">
-                    <EmptyHeader>
-                      <EmptyTitle>Nothing was removed</EmptyTitle>
-                      <EmptyDescription>
-                        The original content was preserved.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-                )}
-                <LoadMore result={removed} />
-              </div>
-            </TabsContent>
-          </Tabs>
+          <div className="flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Audio</CardTitle>
+                <CardDescription>
+                  Validate the cleaned document to create a speaker-aware audio
+                  version.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <LocalReader
+                  texts={kept.results.map((block) => block.text)}
+                  paginationStatus={kept.status}
+                  loadMore={() => kept.loadMore(100)}
+                />
+                {generatingAudio ? (
+                  <div className="flex flex-col gap-2">
+                    <Progress value={document.audioProgress ?? 0} />
+                    <p className="text-xs text-muted-foreground">
+                      Generating audio… {document.audioProgress ?? 0}%
+                    </p>
+                  </div>
+                ) : null}
+                {document.audioStatus === "failed" ? (
+                  <Alert variant="destructive">
+                    <AlertCircleIcon />
+                    <AlertTitle>Audio generation failed</AlertTitle>
+                    <AlertDescription>
+                      {document.audioError ?? "Please try again."}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+                {document.audioStatus === "ready" && document.audioUrl ? (
+                  <div className="flex flex-col gap-2">
+                    <audio
+                      className="w-full"
+                      controls
+                      src={document.audioUrl}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {document.audioSpeakerCount === 1
+                        ? "1 voice detected"
+                        : `${document.audioSpeakerCount ?? 1} voices detected`}
+                    </p>
+                  </div>
+                ) : null}
+                <Button
+                  className="self-start"
+                  disabled={generatingAudio}
+                  onClick={async () => {
+                    try {
+                      await validate({ documentId: id })
+                      toast.success("Audio generation started")
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Could not start audio generation"
+                      )
+                    }
+                  }}
+                >
+                  {document.audioStatus === "ready" ? (
+                    <AudioLinesIcon data-icon="inline-start" />
+                  ) : (
+                    <CheckIcon data-icon="inline-start" />
+                  )}
+                  {document.audioStatus === "ready"
+                    ? "Regenerate audio"
+                    : generatingAudio
+                      ? "Generating…"
+                      : "Validate and create audio"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Tabs defaultValue="cleaned">
+              <TabsList>
+                <TabsTrigger value="cleaned">Cleaned text</TabsTrigger>
+                <TabsTrigger value="removed">
+                  Removed ({document.removedBlockCount ?? 0})
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="cleaned">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Cleaned document</CardTitle>
+                    <CardDescription>
+                      Content ready for the audio pipeline.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4 leading-7">
+                    {kept.results.map((block) => (
+                      <p key={block._id}>{block.text}</p>
+                    ))}
+                    <LoadMore result={kept} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="removed">
+                <div className="flex flex-col gap-3">
+                  {removed.results.length ? (
+                    removed.results.map((block) => (
+                      <Card key={block._id} size="sm">
+                        <CardHeader>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline">
+                              Page {block.pageStart}
+                            </Badge>
+                            <Badge variant="secondary">
+                              {formatReason(block.reason)}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="text-sm leading-6 text-muted-foreground">
+                          {block.text}
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Empty className="border">
+                      <EmptyHeader>
+                        <EmptyTitle>Nothing was removed</EmptyTitle>
+                        <EmptyDescription>
+                          The original content was preserved.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
+                  )}
+                  <LoadMore result={removed} />
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         ) : null}
       </div>
     </main>

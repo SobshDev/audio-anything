@@ -18,6 +18,7 @@ import type * as llm_openrouter from "../llm/openrouter.js";
 import type * as llm_types from "../llm/types.js";
 import type * as llm_usage from "../llm/usage.js";
 import type * as plans from "../plans.js";
+import type * as tts_document from "../tts/document.js";
 import type * as tts_elevenlabs from "../tts/elevenlabs.js";
 import type * as tts_generate from "../tts/generate.js";
 import type * as tts_types from "../tts/types.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "llm/types": typeof llm_types;
   "llm/usage": typeof llm_usage;
   plans: typeof plans;
+  "tts/document": typeof tts_document;
   "tts/elevenlabs": typeof tts_elevenlabs;
   "tts/generate": typeof tts_generate;
   "tts/types": typeof tts_types;

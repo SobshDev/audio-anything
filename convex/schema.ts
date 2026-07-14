@@ -15,6 +15,14 @@ const documentBlockActionValidator = v.union(
   v.literal("removed")
 )
 
+const audioStatusValidator = v.union(
+  v.literal("idle"),
+  v.literal("queued"),
+  v.literal("generating"),
+  v.literal("ready"),
+  v.literal("failed")
+)
+
 export default defineSchema({
   accounts: defineTable({
     accountId: v.string(),
@@ -45,6 +53,13 @@ export default defineSchema({
     error: v.optional(v.string()),
     startedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
+    audioStatus: v.optional(audioStatusValidator),
+    audioProgress: v.optional(v.number()),
+    audioStorageId: v.optional(v.id("_storage")),
+    audioContentType: v.optional(v.string()),
+    audioError: v.optional(v.string()),
+    audioSpeakerCount: v.optional(v.number()),
+    audioCompletedAt: v.optional(v.number()),
     updatedAt: v.number(),
   })
     .index("by_ownerId", ["ownerId"])
