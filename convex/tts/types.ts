@@ -39,6 +39,11 @@ export type SynthesizedSpeech = {
   requestId: string | null
 }
 
+export type DialogueInput = {
+  text: string
+  voiceId: string
+}
+
 export interface TextToSpeechProvider {
   synthesize: (input: SynthesizeSpeechInput) => Promise<SynthesizedSpeech>
 }

@@ -108,7 +108,132 @@ export const getMine = query({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx)
     const document = await ctx.db.get("documents", args.documentId)
-    return document?.ownerId === identity.tokenIdentifier ? document : null
+    if (!document || document.ownerId !== identity.tokenIdentifier) return null
+    return {
+      ...document,
+      audioUrl: document.audioStorageId
+        ? await ctx.storage.getUrl(document.audioStorageId)
+        : null,
+    }
+  },
+})
+
+export const validate = mutation({
+  args: { documentId: v.id("documents") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx)
+    const document = await ctx.db.get("documents", args.documentId)
+    if (!document || document.ownerId !== identity.tokenIdentifier) {
+      throw new Error("Document not found")
+    }
+    if (document.status !== "ready") {
+      throw new Error("The document must finish processing first")
+    }
+    if (
+      document.audioStatus === "queued" ||
+      document.audioStatus === "generating"
+    ) {
+      throw new Error("Audio generation is already in progress")
+    }
+    const previousStorageId = document.audioStorageId
+    await ctx.db.patch("documents", args.documentId, {
+      audioStatus: "queued",
+      audioProgress: 0,
+      audioError: undefined,
+      audioStorageId: undefined,
+      audioContentType: undefined,
+      updatedAt: Date.now(),
+    })
+    if (previousStorageId) await ctx.storage.delete(previousStorageId)
+    await ctx.scheduler.runAfter(0, internal.tts.document.run, {
+      documentId: args.documentId,
+    })
+    return null
+  },
+})
+
+export const getKeptBlocksForAudio = internalQuery({
+  args: {
+    documentId: v.id("documents"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(blockValidator),
+  handler: async (ctx, args) =>
+    await ctx.db
+      .query("documentBlocks")
+      .withIndex("by_documentId_and_action_and_order", (q) =>
+        q.eq("documentId", args.documentId).eq("action", "kept")
+      )
+      .paginate(args.paginationOpts),
+})
+
+export const beginAudioGeneration = internalMutation({
+  args: { documentId: v.id("documents") },
+  returns: v.union(v.any(), v.null()),
+  handler: async (ctx, args) => {
+    const document = await ctx.db.get("documents", args.documentId)
+    if (!document || document.audioStatus !== "queued") return null
+    await ctx.db.patch("documents", args.documentId, {
+      audioStatus: "generating",
+      audioProgress: 5,
+      updatedAt: Date.now(),
+    })
+    return document
+  },
+})
+
+export const setAudioProgress = internalMutation({
+  args: { documentId: v.id("documents"), progress: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!(await ctx.db.get("documents", args.documentId))) return null
+    await ctx.db.patch("documents", args.documentId, {
+      audioProgress: Math.max(0, Math.min(100, args.progress)),
+      updatedAt: Date.now(),
+    })
+    return null
+  },
+})
+
+export const completeAudioGeneration = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+    storageId: v.id("_storage"),
+    contentType: v.string(),
+    speakerCount: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!(await ctx.db.get("documents", args.documentId))) {
+      await ctx.storage.delete(args.storageId)
+      return null
+    }
+    await ctx.db.patch("documents", args.documentId, {
+      audioStatus: "ready",
+      audioProgress: 100,
+      audioStorageId: args.storageId,
+      audioContentType: args.contentType,
+      audioSpeakerCount: args.speakerCount,
+      audioCompletedAt: Date.now(),
+      audioError: undefined,
+      updatedAt: Date.now(),
+    })
+    return null
+  },
+})
+
+export const failAudioGeneration = internalMutation({
+  args: { documentId: v.id("documents"), error: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!(await ctx.db.get("documents", args.documentId))) return null
+    await ctx.db.patch("documents", args.documentId, {
+      audioStatus: "failed",
+      audioError: args.error,
+      updatedAt: Date.now(),
+    })
+    return null
   },
 })
 
@@ -155,10 +280,19 @@ export const retry = mutation({
         "Only ready, failed, or stalled documents can be reprocessed"
       )
     }
+    if (document.audioStorageId)
+      await ctx.storage.delete(document.audioStorageId)
     await ctx.db.patch("documents", args.documentId, {
       status: "queued",
       progress: 0,
       error: undefined,
+      audioStatus: "idle",
+      audioProgress: 0,
+      audioStorageId: undefined,
+      audioContentType: undefined,
+      audioError: undefined,
+      audioSpeakerCount: undefined,
+      audioCompletedAt: undefined,
       updatedAt: Date.now(),
     })
     await ctx.scheduler.runAfter(0, internal.ingestion.process.run, {
@@ -177,6 +311,8 @@ export const remove = mutation({
     if (!document || document.ownerId !== identity.tokenIdentifier) {
       throw new Error("Document not found")
     }
+    if (document.audioStorageId)
+      await ctx.storage.delete(document.audioStorageId)
     await ctx.db.delete("documents", args.documentId)
     await ctx.scheduler.runAfter(0, internal.documents.deleteArtifacts, {
       documentId: args.documentId,
